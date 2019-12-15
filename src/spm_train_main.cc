@@ -18,6 +18,11 @@
 #include "sentencepiece_trainer.h"
 #include "util.h"
 
+#include <fstream>
+#include <string>
+#include <iostream>
+
+
 using sentencepiece::NormalizerSpec;
 using sentencepiece::TrainerSpec;
 
@@ -105,6 +110,8 @@ DEFINE_string(unk_surface, kDefaultTrainerSpec.unk_surface(),
               "Dummy surface string for <unk>. In decoding <unk> is decoded to "
               "`unk_surface`.");
 
+DEFINE_string(user_defined_symbols_file, "", "user defined symbols file. ");
+
 int main(int argc, char *argv[]) {
   sentencepiece::flags::ParseCommandLineFlags(argc, argv);
   sentencepiece::TrainerSpec trainer_spec;
@@ -173,6 +180,27 @@ int main(int argc, char *argv[]) {
 
   trainer_spec.set_model_type(sentencepiece::port::FindOrDie(
       kModelTypeMap, sentencepiece::string_util::ToLower(FLAGS_model_type)));
+
+		std::cout << "open user defined symbols file:" <<FLAGS_user_defined_symbols_file<< std::endl;
+			 
+		if(FLAGS_user_defined_symbols_file != "")
+		{
+				 
+				std::ifstream in(FLAGS_user_defined_symbols_file);
+		
+				std::string line;
+		
+				if(in) // 有该文件
+				{
+						while (getline (in, line)) // line中不包括每行的换行符
+						{ 
+								//std::cout << line << std::endl;
+					trainer_spec.add_user_defined_symbols(line);
+						}
+				std::cout << "user_defined_symbols_size:"<<trainer_spec.user_defined_symbols_size() << std::endl;
+				} 	
+		}
+				
 
   CHECK_OK(sentencepiece::SentencePieceTrainer::Train(trainer_spec,
                                                       normalizer_spec));
