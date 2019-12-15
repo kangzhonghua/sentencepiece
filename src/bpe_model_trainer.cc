@@ -20,6 +20,9 @@
 #include <vector>
 #include "util.h"
 
+#include <fstream>
+#include <iostream>
+
 namespace sentencepiece {
 namespace bpe {
 
@@ -211,6 +214,23 @@ util::Status Trainer::Train() {
   // In real segmentation phase, we can consider them as one symbol.
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
   std::unordered_set<std::string> dup;
+
+  std::string filter_file_name="filter_pieces.txt";
+  //过滤不要的词
+  std::ifstream in(filter_file_name);
+  
+  std::string line;
+  
+  if(in) // 有该文件
+  {
+	  while (getline (in, line)) // line中不包括每行的换行符
+	  { 
+		  //cout << line << endl;
+		  dup.insert(line);
+	  }
+	  std::cout << "filter_pieces size:"<< dup.size() << std::endl;
+  } 
+	
 
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
