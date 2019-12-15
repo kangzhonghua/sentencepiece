@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
   trainer_spec.set_model_type(sentencepiece::port::FindOrDie(
       kModelTypeMap, sentencepiece::string_util::ToLower(FLAGS_model_type)));
 
-		std::cout << "open user defined symbols file:" <<FLAGS_user_defined_symbols_file<< std::endl;
+		LOG(INFO) << "open user defined symbols file:" <<FLAGS_user_defined_symbols_file ;
 			 
 		if(FLAGS_user_defined_symbols_file != "")
 		{
@@ -195,9 +195,9 @@ int main(int argc, char *argv[]) {
 						while (getline (in, line)) // line中不包括每行的换行符
 						{ 
 								//std::cout << line << std::endl;
-					trainer_spec.add_user_defined_symbols(line);
+							trainer_spec.add_user_defined_symbols(line);
 						}
-				std::cout << "user_defined_symbols_size:"<<trainer_spec.user_defined_symbols_size() << std::endl;
+				LOG(INFO) << "user_defined_symbols_size:"<<trainer_spec.user_defined_symbols_size()   ;
 				} 	
 		}
 				

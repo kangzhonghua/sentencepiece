@@ -226,9 +226,10 @@ util::Status Trainer::Train() {
 	  while (getline (in, line)) // line中不包括每行的换行符
 	  { 
 		  //cout << line << endl;
+		  LOG(INFO) << "insert filter pieces"<< line;
 		  dup.insert(line);
 	  }
-	  std::cout << "filter_pieces size:"<< dup.size() << std::endl;
+	  LOG(INFO) << "filter_pieces size:"<< dup.size() ;
   } 
 	
 
@@ -261,13 +262,19 @@ util::Status Trainer::Train() {
       LOG(WARNING) << "No valid symbol found";
       break;
     }
-
+		
     if (!dup.insert(best_symbol->ToString()).second) {
+        LOG(WARNING) << "clear "<< best_symbol->ToString();
       // Removes best_symbol so it is not selected again.
       symbols_cache_.erase(best_symbol->fp);
       active_symbols_.erase(best_symbol);
       continue;
     }
+    else
+    {
+        LOG(INFO) << "insert "<< best_symbol->ToString();
+    }
+
 
     // Stores the best_symbol in the final output.
     final_pieces_.emplace_back(best_symbol->ToString(),
