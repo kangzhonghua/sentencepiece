@@ -206,8 +206,29 @@ util::Status Trainer::Train() {
     }
   }
 
+	std::unordered_set<std::string> filter_word;
+	std::string filter_word_file_name="filter_word.txt";
+
+  //过滤不要的字
+  std::ifstream in_word(filter_word_file_name);
+
+	std::string line;
+	
+  if(in_word) // 有该文件
+  {
+	  while (getline (in_word, line)) // line中不包括每行的换行符
+	  { 
+		  //cout << line << endl;
+		  LOG(INFO) << "insert filter word"<< line;
+		  filter_word.insert(line);
+	  }
+	  LOG(INFO) << "filter word size:"<< filter_word.size() ;
+		
+  } 
+	
+
   const int vocab_size =
-      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
+      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size() + filter_word.size();
   CHECK_GE_OR_RETURN(vocab_size, 0);
 
   // We may see duplicated pieces that are extracted with different path.
@@ -219,7 +240,7 @@ util::Status Trainer::Train() {
   //过滤不要的词
   std::ifstream in(filter_file_name);
   
-  std::string line;
+  
   
   if(in) // 有该文件
   {
@@ -233,6 +254,7 @@ util::Status Trainer::Train() {
   } 
 	
 
+	
   // Main loop.
   CHECK_OR_RETURN(final_pieces_.empty());
   while (final_pieces_.size() < static_cast<size_t>(vocab_size)) {
@@ -327,6 +349,13 @@ util::Status Trainer::Train() {
   // Adds required_chars_
   for (const auto &w : Sorted(required_chars_)) {
     const Symbol *symbol = GetCharSymbol(w.first);
+		
+		if (!filter_word.insert(symbol->ToString()).second) {
+				LOG(WARNING) << "clear "<< symbol->ToString();
+			// Removes best_symbol so it is not selected again.
+			continue;
+		}
+		
     final_pieces_.emplace_back(symbol->ToString(),
                                -static_cast<float>(final_pieces_.size()));
   }
