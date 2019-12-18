@@ -199,14 +199,6 @@ util::Status Trainer::Train() {
     }
   }
 
-  // Makes all bigram symbols.
-  for (size_t sid = 0; sid < symbols_.size(); ++sid) {
-    for (size_t i = 1; i < symbols_[sid].size(); ++i) {
-      AddNewPair(sid, i - 1, i);
-    }
-  }
-
-	std::unordered_set<std::string> filter_word;
 	std::string filter_word_file_name="filter_word.txt";
 
   //过滤不要的字
@@ -214,21 +206,36 @@ util::Status Trainer::Train() {
 
 	std::string line;
 	
+	int total_filter_word = 0;
+    
   if(in_word) // 有该文件
   {
 	  while (getline (in_word, line)) // line中不包括每行的换行符
 	  { 
-		  //cout << line << endl;
-		  LOG(INFO) << "insert filter word"<< line;
-		  filter_word.insert(line);
+	     int n =0;
+       
+          for (const char32 c : string_util::UTF8ToUnicodeText(line)) {
+            n = required_chars_.erase(c);
+            total_filter_word+=n;
+          }
+
+          LOG(INFO) << "filter word:"<< line<<" count:"<<n;
 	  }
-	  LOG(INFO) << "filter word size:"<< filter_word.size() ;
-		
+    LOG(INFO) << "total filter word:"<< total_filter_word;
   } 
+
+  
+
+  // Makes all bigram symbols.
+  for (size_t sid = 0; sid < symbols_.size(); ++sid) {
+    for (size_t i = 1; i < symbols_[sid].size(); ++i) {
+      AddNewPair(sid, i - 1, i);
+    }
+  }
 	
 
   const int vocab_size =
-      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size() + filter_word.size();
+      trainer_spec_.vocab_size() - meta_pieces_.size() - required_chars_.size();
   CHECK_GE_OR_RETURN(vocab_size, 0);
 
   // We may see duplicated pieces that are extracted with different path.
@@ -349,12 +356,6 @@ util::Status Trainer::Train() {
   // Adds required_chars_
   for (const auto &w : Sorted(required_chars_)) {
     const Symbol *symbol = GetCharSymbol(w.first);
-		
-		if (!filter_word.insert(symbol->ToString()).second) {
-				LOG(WARNING) << "clear "<< symbol->ToString();
-			// Removes best_symbol so it is not selected again.
-			continue;
-		}
 		
     final_pieces_.emplace_back(symbol->ToString(),
                                -static_cast<float>(final_pieces_.size()));
