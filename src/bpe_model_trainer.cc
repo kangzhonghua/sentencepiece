@@ -292,7 +292,8 @@ util::Status Trainer::Train() {
       break;
     }
 		
-    if (!dup.insert(best_symbol->ToString()).second) {
+    if (!dup.insert(best_symbol->ToString()).second ||
+        best_symbol->chars[0] == 9601) {  //utf8 空格
         LOG(WARNING) << "clear "<< best_symbol->ToString();
       // Removes best_symbol so it is not selected again.
       symbols_cache_.erase(best_symbol->fp);
