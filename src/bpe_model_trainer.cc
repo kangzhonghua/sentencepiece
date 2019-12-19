@@ -202,15 +202,16 @@ util::Status Trainer::Train() {
 	std::string filter_word_file_name="filter_word.txt";
 
   //过滤不要的字
-  std::ifstream in_word(filter_word_file_name);
+  std::ifstream filter_word(filter_word_file_name);
 
 	std::string line;
 	
 	int total_filter_word = 0;
     
-  if(in_word) // 有该文件
+  if(filter_word) // 有该文件
   {
-	  while (getline (in_word, line)) // line中不包括每行的换行符
+    LOG(INFO) << "load filter word...";
+	  while (getline (filter_word, line)) // line中不包括每行的换行符
 	  { 
 	     int n =0;
        
@@ -219,9 +220,9 @@ util::Status Trainer::Train() {
             total_filter_word+=n;
           }
 
-          LOG(INFO) << "filter word:"<< line<<" count:"<<n;
+          //LOG(INFO) << "filter word "<< line<<" count:"<<n;
 	  }
-    LOG(INFO) << "total filter word:"<< total_filter_word;
+    LOG(INFO) << "total filter word "<< total_filter_word;
   } 
 
   
@@ -243,21 +244,37 @@ util::Status Trainer::Train() {
   // e.g., "aaa" => "aa" + "a" or "a" + "aa".
   std::unordered_set<std::string> dup;
 
-  std::string filter_file_name="filter_pieces.txt";
+  std::string reserve_file_name="reserve_pieces.txt";
+  std::unordered_set<std::string> reserve_pieces;
+  //保留的词
+  std::ifstream reserve_in(reserve_file_name);
+  
+  if(reserve_in) // 有该文件
+  {
+    LOG(INFO) << "load reserve pieces...";
+	  while (getline (reserve_in, line)) // line中不包括每行的换行符
+	  { 
+		  //LOG(INFO) << "insert reserve pieces "<< line;
+		  reserve_pieces.insert(line);
+	  }
+	  LOG(INFO) << "total reserve pieces size "<< reserve_pieces.size() ;
+  } 
+
+
+
+  std::string filter_pieces_name="filter_pieces.txt";
   //过滤不要的词
-  std::ifstream in(filter_file_name);
-  
-  
+  std::ifstream filter_pieces(filter_pieces_name);
   
   if(in) // 有该文件
   {
-	  while (getline (in, line)) // line中不包括每行的换行符
+    LOG(INFO) << "load filter pieces...";
+	  while (getline (filter_pieces, line)) // line中不包括每行的换行符
 	  { 
-		  //cout << line << endl;
-		  LOG(INFO) << "insert filter pieces"<< line;
+		  //LOG(INFO) << "insert filter pieces "<< line;
 		  dup.insert(line);
 	  }
-	  LOG(INFO) << "filter_pieces size:"<< dup.size() ;
+	  LOG(INFO) << "filter pieces size "<< dup.size() ;
   } 
 	
 
@@ -292,19 +309,28 @@ util::Status Trainer::Train() {
       break;
     }
 		
-    if (!dup.insert(best_symbol->ToString()).second ||
-        best_symbol->chars[0] == 9601) {  //utf8 空格
+    if(reserve_pieces.size()>0 && reserve_pieces.find(best_symbol->ToString()) == reserve_pieces.end()){
+        LOG(WARNING) << "pieces is not in reserve,clear "<< best_symbol->ToString();
+        // Removes best_symbol so it is not selected again.
+        symbols_cache_.erase(best_symbol->fp);
+        active_symbols_.erase(best_symbol);
+        continue;         
+    }
+      
+    if((!dup.insert(best_symbol->ToString()).second) ||     
+        (best_symbol->chars[0] == 9601)  //utf8 空格
+        ) {                 
         LOG(WARNING) << "clear "<< best_symbol->ToString();
-      // Removes best_symbol so it is not selected again.
-      symbols_cache_.erase(best_symbol->fp);
-      active_symbols_.erase(best_symbol);
-      continue;
-    }
-    else
-    {
-        LOG(INFO) << "insert "<< best_symbol->ToString();
-    }
+        // Removes best_symbol so it is not selected again.
+        symbols_cache_.erase(best_symbol->fp);
+        active_symbols_.erase(best_symbol);
+        continue;  
+    }    
 
+
+    LOG(INFO) << "insert "<< best_symbol->ToString();
+
+  
 
     // Stores the best_symbol in the final output.
     final_pieces_.emplace_back(best_symbol->ToString(),
