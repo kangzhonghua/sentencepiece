@@ -266,7 +266,7 @@ util::Status Trainer::Train() {
   //过滤不要的词
   std::ifstream filter_pieces(filter_pieces_name);
   
-  if(in) // 有该文件
+  if(filter_pieces) // 有该文件
   {
     LOG(INFO) << "load filter pieces...";
 	  while (getline (filter_pieces, line)) // line中不包括每行的换行符
